@@ -1,0 +1,1 @@
+Chang, Ming-Wei & Yih, Wen-tau & Meek, Christopher. (2008). Partitioned logistic regression for spam filtering. Proceedings of the ACM SIGKDD International Conference on Knowledge Discovery and Data Mining. 97-105. 10.1145/1401890.1401907. 
