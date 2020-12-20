@@ -1,5 +1,5 @@
 import os
-
+from mail import Mail
 
 class Corpus:
     def __init__(self, file_path):
@@ -7,7 +7,7 @@ class Corpus:
 
     def emails(self):
         for filename in os.listdir(self.path):
-            if not filename[0] == 0:
+            if filename[0] == '!':
                 continue
             with open(self.path + '/' + filename, 'r', encoding='utf-8') as f:
-                yield filename, f.read()
+                yield filename, Mail(f.read())

@@ -16,7 +16,7 @@ class Base_filter():
     def test(self, mails_path):
         corpus = Corpus(mails_path)
         truth_dict = utils.read_classification_from_file(mails_path + "/!truth.txt")
-        with open(mails_path + "/!predictions.txt", 'a', encoding='utf-8') as f:
+        with open(mails_path + "/!prediction.txt", 'a', encoding='utf-8') as f:
             for mail in corpus.emails():
                 f.write(f"{mail[0]} {self.evaluate_mail(mail[1])}\n")
         pred_dict = utils.read_classification_from_file(mails_path + '/!truth.txt')
@@ -66,7 +66,7 @@ class PLR_filter(Base_filter):
         return 1/(1+exp(-x))
 
     def evaluate_mail(self, email):
-        feature_vectors = self.split_feature_vector(self.get_feature_vector(email))
+        feature_vectors = email.get_feature_vector_prototype()
         spam_odds = self.spam_distribution ** (self.subvector_count - 1)
         for i in range(self.subvector_count):
             probability = self.sigmoid(np.dot(feature_vectors[i], self.weights[i]) + self.biases[i])
@@ -74,20 +74,20 @@ class PLR_filter(Base_filter):
         return True if log(spam_odds) <= 0 else False
 
     def gradient_descent(self, batch, lr, max_steps):
-        feature_vectors = [self.split_feature_vector(self.get_feature_vector(m[0])) for m in batch]
+        feature_vectors = [(m[0].get_feature_vector_prototype()) for m in batch]
         y = [m[1] for m in batch]
         partial_derivatives_w = [n*[0] for n in self.vector_sizes]
         partial_derivatives_b = self.subvector_count*[0]
         for s in range(max_steps):
-            for vector in feature_vectors:
+            for batch_index, vector in enumerate(feature_vectors):
                 for i, subvector in enumerate(vector):
                     partial_derivatives_b[i] -= lr *\
-                        (1/len(batch))*(self.sigmoid(np.dot(subvector, self.weights[i]) + self.biases[i]) - y[i])
+                        (1/len(batch))*(self.sigmoid(np.dot(subvector, self.weights[i]) + self.biases[i]) - y[batch_index])
                     for j, xij in enumerate(subvector):
                         partial_derivatives_w[i][j] -= lr *\
-                        (1/len(batch))*xij*(self.sigmoid(np.dot(subvector, self.weights[i]) + self.biases[i]) - y[i])
+                        (1/len(batch))*xij*(self.sigmoid(np.dot(subvector, self.weights[i]) + self.biases[i]) - y[batch_index])
             for i in range(self.subvector_count):
-                self.weights = np.add(self.weights[i], partial_derivatives_w[i])
+                self.weights[i] = np.add(self.weights[i], partial_derivatives_w[i])
             self.biases = np.add(self.biases, partial_derivatives_b)
 
 
@@ -95,19 +95,30 @@ class PLR_filter(Base_filter):
         corpus = Corpus(file_path)
         truth_dict = utils.read_classification_from_file(file_path + "/!truth.txt")
         got_data = True
+        batch_count = 1
         while got_data:
             batch = []
             for i in range(batch_size):
                 try:
-                    email = corpus.emails()
+                    email = next(corpus.emails())
                     batch.append((email[1], 1 if truth_dict[email[0]] == self.pos_tag else 0))
-                except GeneratorExit:
+                except StopIteration:
                     got_data = False
                     break
             self.gradient_descent(batch, learning_rate, max_steps)
+            print(f"trained on batch #{batch_count}")
+            batch_count +=1
 
     def save_paremeters(self):
         with open("learned/weights.data",'w') as f:
             pickle.dump(self.weights, f)
         with open("learned/biases.data", 'w') as f:
             pickle.dump(self.weights, f)
+
+if __name__ == '__main__':
+    filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
+    print("Started training")
+    filtr_sn1.train('data/1')
+    print("finished training")
+    filtr_sn1.test('data/2')
+    filtr_sn1.save_paremeters()
