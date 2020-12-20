@@ -10,4 +10,4 @@ class Corpus:
             if filename[0] == '!':
                 continue
             with open(self.path + '/' + filename, 'r', encoding='utf-8') as f:
-                yield filename, Mail(f.read())
+                yield filename, Mail(f.read(), filename)

@@ -4,21 +4,23 @@ import utils
 import quality
 import numpy as np
 import pickle
+import os
 
 class Base_filter():
     def __init__(self, pos_tag = "SPAM", neg_tag = "OK"):
         self.pos_tag = pos_tag
         self.neg_tag = neg_tag
 
-    def evaluate_mail(self, file_path):
-        raise NotImplementedError
-
     def test(self, mails_path):
+        try:
+            os.remove(mails_path + "/!prediction.txt")
+        except:
+            pass
         corpus = Corpus(mails_path)
         truth_dict = utils.read_classification_from_file(mails_path + "/!truth.txt")
         with open(mails_path + "/!prediction.txt", 'a', encoding='utf-8') as f:
             for mail in corpus.emails():
-                f.write(f"{mail[0]} {self.evaluate_mail(mail[1])}\n")
+                f.write(f"{mail[0]} {self.pos_tag if self.evaluate_mail(mail[1]) else self.neg_tag}\n")
         pred_dict = utils.read_classification_from_file(mails_path + '/!truth.txt')
         qual = quality.compute_quality_for_corpus(mails_path)
         print (f"Filter score: {qual}")
@@ -63,14 +65,20 @@ class PLR_filter(Base_filter):
         return feature_vectors
 
     def sigmoid(self, x):
-        return 1/(1+exp(-x))
+        if x > 500:
+            return 1
+
+        if x < -500:
+            return 0
+
+        return exp(x)/(1+exp(x))
 
     def evaluate_mail(self, email):
         feature_vectors = email.get_feature_vector_prototype()
         spam_odds = self.spam_distribution ** (self.subvector_count - 1)
         for i in range(self.subvector_count):
             probability = self.sigmoid(np.dot(feature_vectors[i], self.weights[i]) + self.biases[i])
-            spam_odds *= probability/(1-probability)
+            spam_odds *= (probability/(1-probability)) if probability != 1 else 99
         return True if log(spam_odds) <= 0 else False
 
     def gradient_descent(self, batch, lr, max_steps):
@@ -96,11 +104,12 @@ class PLR_filter(Base_filter):
         truth_dict = utils.read_classification_from_file(file_path + "/!truth.txt")
         got_data = True
         batch_count = 1
+        mails_getter = corpus.emails()
         while got_data:
             batch = []
             for i in range(batch_size):
                 try:
-                    email = next(corpus.emails())
+                    email = next(mails_getter)
                     batch.append((email[1], 1 if truth_dict[email[0]] == self.pos_tag else 0))
                 except StopIteration:
                     got_data = False
@@ -110,15 +119,20 @@ class PLR_filter(Base_filter):
             batch_count +=1
 
     def save_paremeters(self):
+        return
+        try:
+            os.mkdir('learned')
+        except:
+            pass
         with open("learned/weights.data",'w') as f:
-            pickle.dump(self.weights, f)
+            pickle.dump(str(self.weights), f)
         with open("learned/biases.data", 'w') as f:
-            pickle.dump(self.weights, f)
+            pickle.dump(str(self.biases), f)
 
 if __name__ == '__main__':
     filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
     print("Started training")
-    filtr_sn1.train('data/1')
+    filtr_sn1.train('data/1', 10, 0.1, 1000)
     print("finished training")
     filtr_sn1.test('data/2')
     filtr_sn1.save_paremeters()
