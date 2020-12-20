@@ -78,8 +78,8 @@ class PLR_filter(Base_filter):
         spam_odds = self.spam_distribution ** (self.subvector_count - 1)
         for i in range(self.subvector_count):
             probability = self.sigmoid(np.dot(feature_vectors[i], self.weights[i]) + self.biases[i])
-            spam_odds *= (probability/(1-probability)) if probability != 1 else 99
-        return True if log(spam_odds) <= 0 else False
+            spam_odds *= (probability/(1-probability)) if probability != 1 else 9999999999
+        return False if spam_odds <= 1 else True
 
     def gradient_descent(self, batch, lr, max_steps):
         feature_vectors = [(m[0].get_feature_vector_prototype()) for m in batch]
