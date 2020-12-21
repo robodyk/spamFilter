@@ -5,6 +5,7 @@ import quality
 import numpy as np
 import pickle
 import os
+from datetime import datetime
 
 class Base_filter():
     def __init__(self, pos_tag = "SPAM", neg_tag = "OK"):
@@ -82,11 +83,14 @@ class PLR_filter(Base_filter):
         return False if spam_odds <= 1 else True
 
     def gradient_descent(self, batch, lr, max_steps):
+        t = datetime.now()
         feature_vectors = [(m[0].get_feature_vector_prototype()) for m in batch]
+        print(f"geting feature vectors for batch took: {((datetime.now() -t).seconds) * 1000 + ((datetime.now() -t).microseconds) / 1000} ms")
+        t = datetime.now()
         y = [m[1] for m in batch]
-        partial_derivatives_w = [n*[0] for n in self.vector_sizes]
-        partial_derivatives_b = self.subvector_count*[0]
         for s in range(max_steps):
+            partial_derivatives_w = [n * [0] for n in self.vector_sizes]
+            partial_derivatives_b = self.subvector_count * [0]
             for batch_index, vector in enumerate(feature_vectors):
                 for i, subvector in enumerate(vector):
                     partial_derivatives_b[i] -= lr *\
@@ -97,6 +101,8 @@ class PLR_filter(Base_filter):
             for i in range(self.subvector_count):
                 self.weights[i] = np.add(self.weights[i], partial_derivatives_w[i])
             self.biases = np.add(self.biases, partial_derivatives_b)
+        print(
+            f"training the batch took: {((datetime.now() -t).seconds) * 1000 + ((datetime.now() -t).microseconds / 1000)} ms")
 
 
     def train(self, file_path, batch_size=10, learning_rate=0.1, max_steps = 1000):
@@ -107,6 +113,7 @@ class PLR_filter(Base_filter):
         mails_getter = corpus.emails()
         while got_data:
             batch = []
+            t = datetime.now()
             for i in range(batch_size):
                 try:
                     email = next(mails_getter)
@@ -114,6 +121,7 @@ class PLR_filter(Base_filter):
                 except StopIteration:
                     got_data = False
                     break
+            print (f"loading this batch took: {((datetime.now() -t).seconds)*1000 + ((datetime.now() -t).microseconds)/1000} ms")
             self.gradient_descent(batch, learning_rate, max_steps)
             print(f"trained on batch #{batch_count}")
             batch_count +=1
@@ -131,7 +139,7 @@ class PLR_filter(Base_filter):
 if __name__ == '__main__':
     filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
     print("Started training")
-    filtr_sn1.train('data/1', 10, 0.1, 1)
+    filtr_sn1.train('data/1', 10, 0.1, 1000)
     print("finished training")
     filtr_sn1.test('data/2')
     filtr_sn1.save_paremeters()
