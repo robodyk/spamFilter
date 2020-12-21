@@ -119,20 +119,19 @@ class PLR_filter(Base_filter):
             batch_count +=1
 
     def save_paremeters(self):
-        return
         try:
             os.mkdir('learned')
         except:
             pass
-        with open("learned/weights.data",'w') as f:
+        with open("learned/weights.data", 'wb+') as f:
             pickle.dump(str(self.weights), f)
-        with open("learned/biases.data", 'w') as f:
+        with open("learned/biases.data", 'wb+') as f:
             pickle.dump(str(self.biases), f)
 
 if __name__ == '__main__':
     filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
     print("Started training")
-    filtr_sn1.train('data/1', 10, 0.1, 1000)
+    filtr_sn1.train('data/1', 10, 0.1, 1)
     print("finished training")
     filtr_sn1.test('data/2')
     filtr_sn1.save_paremeters()
