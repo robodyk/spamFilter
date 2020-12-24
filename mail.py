@@ -1,10 +1,27 @@
+import re
+
 class Mail:
     def __init__(self, text, filename):
         first_nl = text.find('\n\n')
 
         self.head = text[:first_nl]
         self.content = text[first_nl:]
+        self.content_no_html = self.remove_html_tags(self.content)
         self.filename = filename
+
+    def get_word_count(self, str, word):
+        return str.count(word)
+
+    def count_html_tags(self, str):
+        matches = re.findall('<\/.*?>', str)
+
+        return len(matches)
+
+    def remove_html_tags(self, str):
+        # this can be used to find all HTML (opening) tags - matches = re.findall('(<(?:.|\n)*?>)', str)
+        reg = re.compile('<(.|\n)*?>')
+
+        return re.sub(reg, '', str)
 
     def check_spam_status(self):
         status_tag_index = self.head.find('X-Spam-Status: ')
