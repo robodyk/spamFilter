@@ -25,13 +25,6 @@ class Base_filter():
         qual = quality.compute_quality_for_corpus(mails_path)
         print (f"Filter score: {qual}")
 
-    def get_feature_vector(self,email: str):
-        # TODO : přečte daný email a vrátí jeho "feature vector" tj. list hodnot na základě kterých se email filtruje
-        # např: [hustota slova, hustota jiného slova, hustota velkých písmen, hustota znaku,atd...]
-        # PLR filtr vektor rozdeluje na podvektory, proto je potreba aby "tematicky podobne hodnoty" byly vedle sebe
-        return None
-
-
 class PLR_filter(Base_filter):
     """
     Chang, Ming-Wei & Yih, Wen-tau & Meek, Christopher. (2008). Partitioned logistic regression for spam filtering.
@@ -54,16 +47,6 @@ class PLR_filter(Base_filter):
         else:
             self.biases = biases
 
-    def split_feature_vector(self, feature_vector):
-        feature_vectors = []
-        for size in self.vector_sizes:
-            try:
-                feature_vectors.append(feature_vector[:size])
-                feature_vector = feature_vector[size:]
-            except IndexError:
-                feature_vectors.append(feature_vector)
-        return feature_vectors
-
     def sigmoid(self, x):
         if x > 500:
             return 1
@@ -84,9 +67,9 @@ class PLR_filter(Base_filter):
     def gradient_descent(self, batch, lr, max_steps):
         feature_vectors = [(m[0].get_feature_vector_prototype()) for m in batch]
         y = [m[1] for m in batch]
-        partial_derivatives_w = [n*[0] for n in self.vector_sizes]
-        partial_derivatives_b = self.subvector_count*[0]
         for s in range(max_steps):
+            partial_derivatives_w = [n * [0] for n in self.vector_sizes]
+            partial_derivatives_b = self.subvector_count * [0]
             for batch_index, vector in enumerate(feature_vectors):
                 for i, subvector in enumerate(vector):
                     partial_derivatives_b[i] -= lr *\
@@ -130,7 +113,7 @@ class PLR_filter(Base_filter):
             pickle.dump(str(self.biases), f)
 
 if __name__ == '__main__':
-    filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
+    filtr_sn1 = PLR_filter(7,[3,11,3,11,1,20,13],[3*[1],11*[1],3*[1],11*[1],[0.1],20*[0.3],13*[0.5]],7*[0.1])
     print("Started training")
     filtr_sn1.train('data/1', 10, 0.1, 1000)
     print("finished training")
