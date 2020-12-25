@@ -41,11 +41,11 @@ class PLR_filter(Base_filter):
     Proceedings of the ACM SIGKDD International Conference on Knowledge Discovery and Data Mining.
     97-105. 10.1145/1401890.1401907.
     """
-    def __init__(self, subvector_count, vector_sizes, weights=None, biases=None, spam_distribution=0.5):
+    def __init__(self, subvector_count, vector_sizes, weights=None, biases=None, spam_distribution_odds=1):
         super().__init__()
         self.vector_sizes = vector_sizes
         self.subvector_count = subvector_count
-        self.spam_distribution = spam_distribution
+        self.spam_distribution = spam_distribution_odds
         if not weights:
             with open ("learned/weights.data", "rb") as f:
                 self.weights = pickle.load(f)
@@ -100,7 +100,7 @@ class PLR_filter(Base_filter):
 
             if np.dot(partial_derivatives_w, partial_derivatives_w) < 0.01:
                 return
-            self.weights[subvector_index] = np.add(self.weights[subvector_index], partial_derivatives_w)
+            self.weights[subvector_index] = list(np.add(self.weights[subvector_index], partial_derivatives_w))
             self.biases[subvector_index] += partial_derivative_b
 
     def gradient_descent(self, batch, lr, max_steps):
@@ -163,16 +163,16 @@ class PLR_filter(Base_filter):
         except:
             pass
         with open("learned/weights.data", 'wb+') as f:
-            pickle.dump(str(self.weights), f)
+            pickle.dump(self.weights, f)
         with open("learned/biases.data", 'wb+') as f:
-            pickle.dump(str(self.biases), f)
+            pickle.dump(self.biases, f)
 
 if __name__ == '__main__':
-    filtr_sn1 = PLR_filter(7,[3,11,3,11,1,20,13],[3*[1],11*[1],3*[1],11*[1],[0.1],20*[0.3],13*[0.5]],7*[0.1])
-   #filtr_sn1 = PLR_filter(7, [3,11,3,11,1,20,13])
+    #filtr_sn1 = PLR_filter(7,[3,11,3,11,1,20,13],[3*[1],11*[1],3*[1],11*[1],[1],20*[1],13*[1]],7*[0.1])
+    filtr_sn1 = PLR_filter(7, [3,11,3,11,1,20,13])
     print("Started training")
     for i in range (1):
-        filtr_sn1.train('data/1', 10, 0.1, 10000)
+        filtr_sn1.train('data/1', 10, 0.01, 10000)
     print("finished training")
     filtr_sn1.test('data/1')
     filtr_sn1.test('data/2')
