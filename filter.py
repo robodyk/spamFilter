@@ -82,6 +82,23 @@ class PLR_filter(Base_filter):
             spam_odds *= (probability/(1-probability)) if probability != 1 else 9999999999
         return False if spam_odds <= 1 else True
 
+    def gradient_descent_V2(self, subvector_index, y, batch, lr, max_steps):
+        for s in range(max_steps):
+            partial_derivatives_w = len(self.weights[subvector_index]) * [0]
+            partial_derivative_b = 0
+            for batch_index, vector in enumerate(batch):
+                partial_derivative_b -= lr *\
+                    (1/len(batch))*(self.sigmoid(np.dot(vector, self.weights[subvector_index]) +
+                                                 self.biases[subvector_index]) - y[batch_index])
+                for j, xij in enumerate(vector):
+                    partial_derivatives_w[j] -= lr *\
+                    (1/len(batch))*xij*(self.sigmoid(np.dot(vector, self.weights[subvector_index]) + self.biases[subvector_index]) - y[batch_index])
+
+            if np.dot(partial_derivatives_w, partial_derivatives_w) < 0.0001:
+                return
+            self.weights[subvector_index] = np.add(self.weights[subvector_index], partial_derivatives_w)
+            self.biases[subvector_index] += partial_derivative_b
+
     def gradient_descent(self, batch, lr, max_steps):
         t = datetime.now()
         feature_vectors = [(m[0].get_feature_vector_prototype()) for m in batch]
@@ -122,8 +139,18 @@ class PLR_filter(Base_filter):
                     got_data = False
                     break
             print (f"loading this batch took: {((datetime.now() -t).seconds)*1000 + ((datetime.now() -t).microseconds)/1000} ms")
-            self.gradient_descent(batch, learning_rate, max_steps)
+            t = datetime.now()
+            feature_vectors = [(m[0].get_feature_vector_prototype()) for m in batch]
+            print(
+                f"geting feature vectors for batch took: {((datetime.now() - t).seconds) * 1000 + ((datetime.now() - t).microseconds) / 1000} ms")
+            y = [m[1] for m in batch]
+            t = datetime.now()
+            for i in range(self.subvector_count):
+                subvector_batch = [v[i] for v in feature_vectors]
+                self.gradient_descent_V2(i,y,subvector_batch,learning_rate, max_steps)
             print(f"trained on batch #{batch_count}")
+            print(
+                f"training on the batch took: {((datetime.now() - t).seconds) * 1000 + ((datetime.now() - t).microseconds / 1000)} ms")
             batch_count +=1
 
     def save_paremeters(self):
@@ -139,7 +166,9 @@ class PLR_filter(Base_filter):
 if __name__ == '__main__':
     filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
     print("Started training")
-    filtr_sn1.train('data/1', 10, 0.1, 1000)
+    for i in range (1):
+        filtr_sn1.train('data/1', 10, 0.1, 1)
     print("finished training")
+    filtr_sn1.test('data/1')
     filtr_sn1.test('data/2')
     filtr_sn1.save_paremeters()
