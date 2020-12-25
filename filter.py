@@ -21,7 +21,9 @@ class Base_filter():
         truth_dict = utils.read_classification_from_file(mails_path + "/!truth.txt")
         with open(mails_path + "/!prediction.txt", 'a', encoding='utf-8') as f:
             for mail in corpus.emails():
-                f.write(f"{mail[0]} {self.pos_tag if self.evaluate_mail(mail[1]) else self.neg_tag}\n")
+                res = self.evaluate_mail(mail[1])
+                f.write(f"{mail[0]} {self.pos_tag if res else self.neg_tag}\n")
+                print(f"Prediction: {self.pos_tag if res else self.neg_tag}\n Truth: {truth_dict[mail[0]]}")
         pred_dict = utils.read_classification_from_file(mails_path + '/!truth.txt')
         qual = quality.compute_quality_for_corpus(mails_path)
         print (f"Filter score: {qual}")
@@ -45,12 +47,12 @@ class PLR_filter(Base_filter):
         self.subvector_count = subvector_count
         self.spam_distribution = spam_distribution
         if not weights:
-            with open ("learned/weights.data", "r") as f:
+            with open ("learned/weights.data", "rb") as f:
                 self.weights = pickle.load(f)
         else:
             self.weights = weights
         if not biases:
-            with open ("learned/biases.data") as f:
+            with open ("learned/biases.data", "rb") as f:
                 self.biases = pickle.load(f)
         else:
             self.biases = biases
@@ -77,8 +79,10 @@ class PLR_filter(Base_filter):
     def evaluate_mail(self, email):
         feature_vectors = email.get_feature_vector_prototype()
         spam_odds = self.spam_distribution ** (self.subvector_count - 1)
+        print (f"Mail: {email.filename}\nFeature vector: {feature_vectors}\nSubvector probabilities:")
         for i in range(self.subvector_count):
             probability = self.sigmoid(np.dot(feature_vectors[i], self.weights[i]) + self.biases[i])
+            print(f"{i}: {probability}")
             spam_odds *= (probability/(1-probability)) if probability != 1 else 9999999999
         return False if spam_odds <= 1 else True
 
@@ -94,7 +98,7 @@ class PLR_filter(Base_filter):
                     partial_derivatives_w[j] -= lr *\
                     (1/len(batch))*xij*(self.sigmoid(np.dot(vector, self.weights[subvector_index]) + self.biases[subvector_index]) - y[batch_index])
 
-            if np.dot(partial_derivatives_w, partial_derivatives_w) < 0.0001:
+            if np.dot(partial_derivatives_w, partial_derivatives_w) < 0.01:
                 return
             self.weights[subvector_index] = np.add(self.weights[subvector_index], partial_derivatives_w)
             self.biases[subvector_index] += partial_derivative_b
@@ -164,10 +168,11 @@ class PLR_filter(Base_filter):
             pickle.dump(str(self.biases), f)
 
 if __name__ == '__main__':
-    filtr_sn1 = PLR_filter(5,[3,10,3,10,1],[3*[1],10*[1],3*[1],10*[1],[1]],5*[0.1])
+    filtr_sn1 = PLR_filter(7,[3,11,3,11,1,20,13],[3*[1],11*[1],3*[1],11*[1],[0.1],20*[0.3],13*[0.5]],7*[0.1])
+   #filtr_sn1 = PLR_filter(7, [3,11,3,11,1,20,13])
     print("Started training")
     for i in range (1):
-        filtr_sn1.train('data/1', 10, 0.1, 1)
+        filtr_sn1.train('data/1', 10, 0.1, 10000)
     print("finished training")
     filtr_sn1.test('data/1')
     filtr_sn1.test('data/2')

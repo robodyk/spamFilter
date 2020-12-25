@@ -1,10 +1,27 @@
+import re
+
 class Mail:
     def __init__(self, text, filename):
         first_nl = text.find('\n\n')
 
         self.head = text[:first_nl]
         self.content = text[first_nl:]
+        self.content_no_html = self.remove_html_tags(self.content)
         self.filename = filename
+
+    def get_word_count(self, str, word):
+        return str.count(word)
+
+    def count_html_tags(self, str):
+        matches = re.findall('<\/.*?>', str)
+
+        return len(matches)
+
+    def remove_html_tags(self, str):
+        # this can be used to find all HTML (opening) tags - matches = re.findall('(<(?:.|\n)*?>)', str)
+        reg = re.compile('<(.|\n)*?>')
+
+        return re.sub(reg, '', str)
 
     def check_spam_status(self):
         status_tag_index = self.head.find('X-Spam-Status: ')
@@ -21,10 +38,10 @@ class Mail:
 
     def get_caps_and_chars_vector(self, str):
         if str == '':
-            return [3*[0], 10*[0]]
+            return [3*[0], 11*[0]]
         # vraci 2 podvektory v listu, neni to uplne smooth, ale usetri to 1 iteraci skrz body
         # char = neni v abecede
-        char_count_dict = {'#': 0, '@': 0, '*': 0, '$': 0, '-': 0, '=': 0, '!': 0}
+        char_count_dict = {'#': 0, '@': 0, '*': 0, '$': 0, '-': 0, '=': 0, '!': 0, '>': 0}
         char_chain = False
         char_count = 0
         longest_char_chain = 0
@@ -36,7 +53,6 @@ class Mail:
         total_count = 0
         chain_count= 0
         caps_chains_sum = 0
-        alphabet = "abcdefghijklmnopqrstuvwxyz"
         for char in str:
             total_count += 1
             if ord('Z') >= ord(char) >= ord('A'):
@@ -73,8 +89,58 @@ class Mail:
                 [v for v in char_count_dict.values()] +
                 [char_count / total_count, (char_chains_sum / char_chain_count) if char_chain_count > 0 else 0, longest_char_chain]]
 
+    def get_words_counts(self):
+        upper_content = self.content_no_html.upper()
+
+        return [[
+            self.get_word_count(upper_content, '100%'),
+            self.get_word_count(upper_content, '#1'),
+            self.get_word_count(upper_content, 'FREE'),
+            self.get_word_count(upper_content, 'SATISFIED'),
+            self.get_word_count(upper_content, 'OFF'),
+            self.get_word_count(upper_content, 'GET'),
+            self.get_word_count(upper_content, 'AD'),
+            self.get_word_count(upper_content, 'ALL'),
+            self.get_word_count(upper_content, 'NEW'),
+            self.get_word_count(upper_content, 'BARGAIN'),
+            self.get_word_count(upper_content, 'BONUS'),
+            self.get_word_count(upper_content, 'BEST'),
+            self.get_word_count(upper_content, 'PRICE'),
+            self.get_word_count(upper_content, 'MOST'),
+            self.get_word_count(upper_content, 'VIRUS'),
+            self.get_word_count(upper_content, 'MONEY'),
+            self.get_word_count(upper_content, '.JPG'),
+            self.get_word_count(upper_content, '.PNG'),
+            self.get_word_count(upper_content, '.COM'),
+            self.get_word_count(upper_content, '.NET'),
+        ]]
+
+    def get_html_tags_count(self):
+        upper_content = self.content.upper()
+
+        return [[
+            self.get_word_count(upper_content, '<META'),
+            self.get_word_count(upper_content, '<TITLE'),
+            self.get_word_count(upper_content, '<HEAD'),
+            self.get_word_count(upper_content, '<BODY'),
+            self.get_word_count(upper_content, '<CONTENT'),
+            self.get_word_count(upper_content, '<P'),
+            self.get_word_count(upper_content, '<IMG'),
+            self.get_word_count(upper_content, '<B>'),
+            self.get_word_count(upper_content, '<BR>'),
+            self.get_word_count(upper_content, '<TR'),
+            self.get_word_count(upper_content, '<TD'),
+            self.get_word_count(upper_content, '<UL'),
+            self.get_word_count(upper_content, '<LI'),
+        ]]
+
     def get_feature_vector_prototype(self):
-        return self.get_caps_and_chars_vector(self.get_subject()) + self.get_caps_and_chars_vector(self.content) + [[self.check_spam_status()]]
+        vector = self.get_caps_and_chars_vector(self.get_subject()) + \
+                 self.get_caps_and_chars_vector(self.content_no_html) + \
+                 [[self.check_spam_status()]] + \
+                 self.get_words_counts() + \
+                 self.get_html_tags_count()
+        return vector
 
 if __name__ == '__main__':
     f = open('data/2/2490.f03277d54faea3974942b3213f38268f', "r", encoding="utf-8")
