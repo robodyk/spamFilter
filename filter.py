@@ -5,7 +5,6 @@ import utils
 import numpy as np
 import pickle
 import os
-from datetime import datetime
 from matplotlib import pyplot as plt
 
 
@@ -324,14 +323,14 @@ class MyFilter(Base_filter):
     def save_dicts(self):
         try:
             os.mkdir(self.data_dir)
-            self.save_dicts()
         except:
-            with open(self.data_dir + "/spam_dict.data", "wb+") as f:
-                pickle.dump(self.content_spam_dict, f)
-            with open(self.data_dir + "/ham_dict.data", "wb+") as f:
-                pickle.dump(self.content_ham_dict, f)
-            with open(self.data_dir + "/spam_probability.data", "wb+") as f:
-                pickle.dump(self.spam_probability, f)
+            pass
+        with open(self.data_dir + "/spam_dict.data", "wb+") as f:
+            pickle.dump(self.content_spam_dict, f)
+        with open(self.data_dir + "/ham_dict.data", "wb+") as f:
+            pickle.dump(self.content_ham_dict, f)
+        with open(self.data_dir + "/spam_probability.data", "wb+") as f:
+            pickle.dump(self.spam_probability, f)
 
     def load_dicts(self):
         try:
@@ -352,4 +351,4 @@ if __name__ == '__main__':
     print(filtr_sn3.ham_probability)
     filtr_sn3.test('data/1')
     filtr_sn3.test('data/2')
-    #filtr_sn3.save_dicts()
+    filtr_sn3.save_dicts()
