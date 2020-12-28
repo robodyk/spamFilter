@@ -27,6 +27,8 @@ class Base_filter():
 
 class PLR_filter(Base_filter):
     """
+    With given data performs worse than Naive Bayes filter.
+
     Chang, Ming-Wei & Yih, Wen-tau & Meek, Christopher. (2008). Partitioned logistic regression for spam filtering.
     Proceedings of the ACM SIGKDD International Conference on Knowledge Discovery and Data Mining.
     97-105. 10.1145/1401890.1401907.
@@ -144,6 +146,8 @@ class PLR_filter(Base_filter):
 
 class LR_filter(PLR_filter):
     """
+    With given data performs worse than Naive Bayes filter.
+
     Logistic regression optimized by gradient descent
     """
     def __init__(self, vector_size, weights= None, bias= None, spam_distribution_odds= 3, learned_dir = 'learned_lr'):
@@ -213,9 +217,7 @@ class LR_filter(PLR_filter):
         step_b = 0
         loss = 0
         for batch_index, vector in enumerate(batch):
-            #print(vector)
             sig = self.sigmoid(np.dot(vector, self.weights) + self.biases)
-            #print(sig)
             if sig == 0 or sig == 1:
                 print("extreme sig")
             step_b = self.bias_momentums * momentum - \
@@ -225,8 +227,6 @@ class LR_filter(PLR_filter):
                 steps_w[j] = self.weight_momentums[j] * momentum - \
                                            lr * (1 / len(batch)) * xij * (sig - y[batch_index])
             loss -= (1 / len(batch)) * (y[batch_index] * log(sig) + (1 - y[batch_index]) * log(1 - sig))
-        # if np.dot(steps_w, steps_w) < lr*lr*0.001:
-        #   return
         self.weight_momentums = steps_w
         self.bias_momentums = step_b
         self.weights = list(np.add(self.weights, steps_w))

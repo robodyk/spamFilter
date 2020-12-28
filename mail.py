@@ -27,7 +27,6 @@ class Mail:
         return len(matches)
 
     def remove_html_tags(self, str):
-        # this can be used to find all HTML (opening) tags - matches = re.findall('(<(?:.|\n)*?>)', str)
         reg = re.compile('<(.|\n)*?>')
         str = str.replace('=\n', '\n')
         return re.sub(reg, '', str)
@@ -101,7 +100,7 @@ class Mail:
     def get_words_counts(self):
         upper_content = self.content_no_html.upper()
         count_fraction = self.content_no_html_wordcount/100
-        return [[ #jsem awful, dxx pridavam 12
+        return [[
             self.get_word_count(upper_content, 'GRANT') / count_fraction,
             self.get_word_count(upper_content, 'DOLLARS') / count_fraction,
             self.get_word_count(upper_content, 'OPPORTUNITY') / count_fraction,
@@ -156,6 +155,9 @@ class Mail:
         ]]
 
     def get_feature_vector_plr(self):
+        """
+        Returns list of smaller vectors
+        """
         vector = self.get_caps_and_chars_vector(self.subject) + \
                  self.get_caps_and_chars_vector(self.content_no_html) + \
                  self.get_words_counts() + \
@@ -163,6 +165,9 @@ class Mail:
         return vector
 
     def get_feature_vector_lr(self):
+        """
+        Returns one vector containing all values
+        """
         temp = self.get_caps_and_chars_vector(self.subject)
         vector = temp[0] + temp[1]
         temp = self.get_caps_and_chars_vector(self.content_no_html)
