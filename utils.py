@@ -1,3 +1,5 @@
+from math import floor, log
+
 
 def read_classification_from_file(filepath):
     dictionary = {}
@@ -11,4 +13,5 @@ def read_classification_from_file(filepath):
                 pass
     return dictionary
 
-
+def order_of_magnitude(num):
+    return floor(log(num, 10))

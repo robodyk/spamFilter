@@ -7,7 +7,16 @@ class Mail:
         self.head = text[:first_nl]
         self.content = text[first_nl:]
         self.content_no_html = self.remove_html_tags(self.content)
+        self.subject = self.get_subject()
         self.filename = filename
+        self.content_no_html_wordcount = self.get_total_word_count(self.content_no_html)
+        self.subject_wordcount = self.get_total_word_count(self.subject)
+
+
+    def get_total_word_count(self, str):
+        str = str.replace('.', '').replace(',', '').replace('!', '').replace('?', '').replace('\n', ' ')
+        words = str.split()
+        return len(words)if len(words) >0 else 1
 
     def get_word_count(self, str, word):
         return str.count(word)
@@ -20,16 +29,16 @@ class Mail:
     def remove_html_tags(self, str):
         # this can be used to find all HTML (opening) tags - matches = re.findall('(<(?:.|\n)*?>)', str)
         reg = re.compile('<(.|\n)*?>')
-
+        str = str.replace('=\n', '\n')
         return re.sub(reg, '', str)
 
     def check_spam_status(self):
         status_tag_index = self.head.find('X-Spam-Status: ')
-        if status_tag_index <0:
-            return 0.5
+        if status_tag_index < 0:
+            return 1
         if self.head[status_tag_index + 15] == 'N':
             return 0
-        return 1
+        return 99999999999
 
     def get_subject(self):
         subject_start = self.head.find("Subject: ") + 9
@@ -38,10 +47,10 @@ class Mail:
 
     def get_caps_and_chars_vector(self, str):
         if str == '':
-            return [3*[0], 11*[0]]
+            return [3*[0], 12*[0]]
         # vraci 2 podvektory v listu, neni to uplne smooth, ale usetri to 1 iteraci skrz body
         # char = neni v abecede
-        char_count_dict = {'#': 0, '@': 0, '*': 0, '$': 0, '-': 0, '=': 0, '!': 0, '>': 0}
+        char_count_dict = {';': 0, '&': 0, '*': 0, '$': 0, '+': 0, '=': 0, '!': 0, '>': 0, '%': 0}
         char_chain = False
         char_count = 0
         longest_char_chain = 0
@@ -86,63 +95,83 @@ class Mail:
                             if longest_char_chain < char_chain_len:
                                 longest_char_chain = char_chain_len
         return [[caps_count / total_count, (caps_chains_sum / chain_count) if chain_count > 0 else 0, longest_chain],
-                [v for v in char_count_dict.values()] +
+                [100*v/total_count for v in char_count_dict.values()] +
                 [char_count / total_count, (char_chains_sum / char_chain_count) if char_chain_count > 0 else 0, longest_char_chain]]
 
     def get_words_counts(self):
         upper_content = self.content_no_html.upper()
-
-        return [[
-            self.get_word_count(upper_content, '100%'),
-            self.get_word_count(upper_content, '#1'),
-            self.get_word_count(upper_content, 'FREE'),
-            self.get_word_count(upper_content, 'SATISFIED'),
-            self.get_word_count(upper_content, 'OFF'),
-            self.get_word_count(upper_content, 'GET'),
-            self.get_word_count(upper_content, 'AD'),
-            self.get_word_count(upper_content, 'ALL'),
-            self.get_word_count(upper_content, 'NEW'),
-            self.get_word_count(upper_content, 'BARGAIN'),
-            self.get_word_count(upper_content, 'BONUS'),
-            self.get_word_count(upper_content, 'BEST'),
-            self.get_word_count(upper_content, 'PRICE'),
-            self.get_word_count(upper_content, 'MOST'),
-            self.get_word_count(upper_content, 'VIRUS'),
-            self.get_word_count(upper_content, 'MONEY'),
-            self.get_word_count(upper_content, '.JPG'),
-            self.get_word_count(upper_content, '.PNG'),
-            self.get_word_count(upper_content, '.COM'),
-            self.get_word_count(upper_content, '.NET'),
+        count_fraction = self.content_no_html_wordcount/100
+        return [[ #jsem awful, dxx pridavam 12
+            self.get_word_count(upper_content, 'GRANT') / count_fraction,
+            self.get_word_count(upper_content, 'DOLLARS') / count_fraction,
+            self.get_word_count(upper_content, 'OPPORTUNITY') / count_fraction,
+            self.get_word_count(upper_content, 'INSURANCE') / count_fraction,
+            self.get_word_count(upper_content, 'MILLION') / count_fraction,
+            self.get_word_count(upper_content, 'RESULTS') / count_fraction,
+            self.get_word_count(upper_content, 'VIAGRA') / count_fraction,
+            self.get_word_count(upper_content, 'ORDER') / count_fraction,
+            self.get_word_count(upper_content, 'ONLY') / count_fraction,
+            self.get_word_count(upper_content, 'RECEIVE') / count_fraction,
+            self.get_word_count(upper_content, 'BUSINESS') / count_fraction,
+            self.get_word_count(upper_content, 'CLICK') / count_fraction,
+            self.get_word_count(upper_content, '100%') / count_fraction,
+            self.get_word_count(upper_content, '#1') / count_fraction,
+            self.get_word_count(upper_content, 'FREE') / count_fraction,
+            self.get_word_count(upper_content, 'SATISFIED') / count_fraction,
+            self.get_word_count(upper_content, 'OFF') / count_fraction,
+            self.get_word_count(upper_content, 'GET') / count_fraction,
+            self.get_word_count(upper_content, 'AD') / count_fraction,
+            self.get_word_count(upper_content, 'ALL') / count_fraction,
+            self.get_word_count(upper_content, 'NEW') / count_fraction,
+            self.get_word_count(upper_content, 'BARGAIN') / count_fraction,
+            self.get_word_count(upper_content, 'BONUS') / count_fraction,
+            self.get_word_count(upper_content, 'BEST') / count_fraction,
+            self.get_word_count(upper_content, 'PRICE') / count_fraction,
+            self.get_word_count(upper_content, 'MOST') / count_fraction,
+            self.get_word_count(upper_content, 'VIRUS') / count_fraction,
+            self.get_word_count(upper_content, 'MONEY') / count_fraction,
+            self.get_word_count(upper_content, '.JPG') / count_fraction,
+            self.get_word_count(upper_content, '.PNG') / count_fraction,
+            self.get_word_count(upper_content, '.COM') / count_fraction,
+            self.get_word_count(upper_content, '.NET') / count_fraction,
         ]]
 
     def get_html_tags_count(self):
         upper_content = self.content.upper()
-
+        count_fraction = self.content_no_html_wordcount / 100
         return [[
-            self.get_word_count(upper_content, '<META'),
-            self.get_word_count(upper_content, '<TITLE'),
-            self.get_word_count(upper_content, '<HEAD'),
-            self.get_word_count(upper_content, '<BODY'),
-            self.get_word_count(upper_content, '<CONTENT'),
-            self.get_word_count(upper_content, '<P'),
-            self.get_word_count(upper_content, '<IMG'),
-            self.get_word_count(upper_content, '<B>'),
-            self.get_word_count(upper_content, '<BR>'),
-            self.get_word_count(upper_content, '<TR'),
-            self.get_word_count(upper_content, '<TD'),
-            self.get_word_count(upper_content, '<UL'),
-            self.get_word_count(upper_content, '<LI'),
+            self.get_word_count(upper_content, '<META') / count_fraction,
+            self.get_word_count(upper_content, '<TITLE') / count_fraction,
+            self.get_word_count(upper_content, '<HEAD') / count_fraction,
+            self.get_word_count(upper_content, '<BODY') / count_fraction,
+            self.get_word_count(upper_content, '<CONTENT') / count_fraction,
+            self.get_word_count(upper_content, '<P') / count_fraction,
+            self.get_word_count(upper_content, '<IMG') / count_fraction,
+            self.get_word_count(upper_content, '<B>') / count_fraction,
+            self.get_word_count(upper_content, '<BR>') / count_fraction,
+            self.get_word_count(upper_content, '<TR') / count_fraction,
+            self.get_word_count(upper_content, '<TD') / count_fraction,
+            self.get_word_count(upper_content, '<UL') / count_fraction,
+            self.get_word_count(upper_content, '<LI') / count_fraction,
         ]]
 
-    def get_feature_vector_prototype(self):
-        vector = self.get_caps_and_chars_vector(self.get_subject()) + \
+    def get_feature_vector_plr(self):
+        vector = self.get_caps_and_chars_vector(self.subject) + \
                  self.get_caps_and_chars_vector(self.content_no_html) + \
-                 [[self.check_spam_status()]] + \
                  self.get_words_counts() + \
                  self.get_html_tags_count()
         return vector
 
+    def get_feature_vector_lr(self):
+        temp = self.get_caps_and_chars_vector(self.subject)
+        vector = temp[0] + temp[1]
+        temp = self.get_caps_and_chars_vector(self.content_no_html)
+        vector += temp[0] + temp[1] +\
+            self.get_words_counts()[0] +\
+            self.get_html_tags_count()[0]
+        return vector
+
 if __name__ == '__main__':
-    f = open('data/2/2490.f03277d54faea3974942b3213f38268f', "r", encoding="utf-8")
+    f = open('data/1/0001.bfc8d64d12b325ff385cca8d07b84288', "r", encoding="utf-8")
     mail = Mail(f.read(), 'data/2/2490.f03277d54faea3974942b3213f38268f')
-    print(mail.get_feature_vector_prototype())
+    print(mail.get_feature_vector_lr())
